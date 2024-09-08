@@ -26,6 +26,35 @@ impl Backend {
                 .map_err(|_| tower_lsp::jsonrpc::Error::internal_error())?,
         })
     }
+
+    async fn publish_version_diagnostics(&self, document_uri: Url) {
+        self.client
+            .publish_diagnostics(
+                document_uri,
+                vec![Diagnostic {
+                    range: Range {
+                        start: Position {
+                            line: 1,
+                            character: 11,
+                        },
+                        end: Position {
+                            line: 1,
+                            character: 19,
+                        },
+                    },
+                    severity: Some(DiagnosticSeverity::INFORMATION),
+                    code: None,
+                    code_description: None,
+                    source: None,
+                    message: "This is a test diagnostic.".to_string(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                }],
+                None,
+            )
+            .await;
+    }
 }
 
 #[tower_lsp::async_trait]
@@ -55,18 +84,26 @@ impl LanguageServer for Backend {
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         if let Some(change) = params.content_changes.into_iter().next() {
+            let uri = params.text_document.uri;
+
             self.file_contents
                 .lock()
                 .unwrap()
-                .insert(params.text_document.uri, change.text.into());
+                .insert(uri.clone(), change.text.into());
+
+            self.publish_version_diagnostics(uri.clone()).await;
         }
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        let uri = params.text_document.uri;
+
         self.file_contents
             .lock()
             .unwrap()
-            .insert(params.text_document.uri, params.text_document.text.into());
+            .insert(uri.clone(), params.text_document.text.into());
+
+        self.publish_version_diagnostics(uri.clone()).await;
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
