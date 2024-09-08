@@ -34,27 +34,6 @@ impl LanguageServer for Backend {
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
-                diagnostic_provider: Some(DiagnosticServerCapabilities::RegistrationOptions(
-                    DiagnosticRegistrationOptions {
-                        text_document_registration_options: TextDocumentRegistrationOptions {
-                            document_selector: Some(vec![DocumentFilter {
-                                language: Some("JSON".into()),
-                                pattern: Some("**/package.json".into()),
-                                scheme: None,
-                            }]),
-                        },
-                        static_registration_options: StaticRegistrationOptions { id: None },
-                        diagnostic_options: DiagnosticOptions {
-                            identifier: None,
-                            inter_file_dependencies: false,
-                            workspace_diagnostics: false,
-                            work_done_progress_options: WorkDoneProgressOptions {
-                                work_done_progress: Some(false),
-                            },
-                        },
-                    },
-                )),
-                inline_value_provider: Some(OneOf::Left(true)),
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::FULL,
                 )),
@@ -123,64 +102,6 @@ impl LanguageServer for Backend {
             }),
             range: None,
         }))
-    }
-
-    async fn diagnostic(
-        &self,
-        _params: DocumentDiagnosticParams,
-    ) -> Result<DocumentDiagnosticReportResult> {
-        self.client
-            .log_message(MessageType::WARNING, "Foobar")
-            .await;
-
-        let report = DocumentDiagnosticReport::Full(RelatedFullDocumentDiagnosticReport {
-            related_documents: None,
-            full_document_diagnostic_report: FullDocumentDiagnosticReport {
-                result_id: Some("1".into()),
-                items: vec![Diagnostic {
-                    range: Range {
-                        start: Position {
-                            line: 2,
-                            character: 12,
-                        },
-                        end: Position {
-                            line: 2,
-                            character: 20,
-                        },
-                    },
-                    severity: Some(DiagnosticSeverity::ERROR),
-                    code: None,
-                    code_description: None,
-                    source: None,
-                    message: "This is a fake error".to_string(),
-                    related_information: None,
-                    tags: None,
-                    data: None,
-                }],
-            },
-        });
-
-        return Ok(DocumentDiagnosticReportResult::Report(report));
-    }
-
-    async fn inline_value(&self, _params: InlineValueParams) -> Result<Option<Vec<InlineValue>>> {
-        self.client
-            .log_message(MessageType::WARNING, "Foobar")
-            .await;
-
-        return Ok(Some(vec![InlineValue::Text(InlineValueText {
-            range: Range {
-                start: Position {
-                    line: 2,
-                    character: 12,
-                },
-                end: Position {
-                    line: 2,
-                    character: 20,
-                },
-            },
-            text: "Foobar".into(),
-        })]));
     }
 }
 
